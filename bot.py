@@ -79,7 +79,9 @@ class UserStates(StatesGroup):
 
 @dp.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext):
-    await message.answer("Привет! Отправь полный номер группы и я его запомню")
+    await state.clear()
+    await message.answer("""Привет! Отправь полный номер группы и я его запомню
+P.s.: если что-то сломалось, пропиши /start""")
     await state.set_state(UserStates.week_num)
 
 
@@ -140,7 +142,7 @@ async def week_change(call: CallbackQuery, state: FSMContext):
 
 @dp.callback_query(F.data.casefold() == 'sched_exit', UserStates.sched_soup)
 async def exit(call: CallbackQuery, state: FSMContext):
-    state.clear()
+    await state.clear()
     await call.message.delete()
     await call.message.answer("Привет! Отправь полный номер группы и я его запомню")
     await state.set_state(UserStates.week_num)
