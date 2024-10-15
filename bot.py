@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import json
 
 from aiogram import Bot, Dispatcher, F
 from aiogram.types import Message, ReplyKeyboardMarkup, InlineKeyboardMarkup, CallbackQuery
