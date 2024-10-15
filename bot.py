@@ -1,11 +1,11 @@
 import asyncio
-import bs4
 import logging
+import json
 
 from aiogram import Bot, Dispatcher, F
 from aiogram.types import Message, ReplyKeyboardMarkup, InlineKeyboardMarkup, CallbackQuery
 from aiogram.enums import ParseMode
-from aiogram.filters import CommandStart
+from aiogram.filters import CommandStart, Command
 from aiogram.client.default import DefaultBotProperties
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
@@ -24,6 +24,13 @@ bot = Bot(
 dp = Dispatcher()
 
 chatId_to_group = {}
+
+
+users_set = set()
+with open('users.txt', 'r') as file:
+    for line in file:
+        nickname = line.strip()
+        users_set.add(nickname)
 
 
 def open_shed_kb() -> ReplyKeyboardMarkup:
@@ -46,11 +53,6 @@ def schedule_navi() -> InlineKeyboardMarkup:
     return kb.as_markup()
 
 def schedule_parser(schedule: dict) -> str:
-    lesson_type_dict = {
-        'sem': 'Семинар',
-        'lect': 'Лекция',
-        'lab': 'Лабораторная работа'
-    }
     reply_text = ""
     for i in range(0,6):
         day = schedule[str(i)]
@@ -61,7 +63,7 @@ def schedule_parser(schedule: dict) -> str:
                 reply_text += f"""<blockquote><b>Номер пары: </b>{lesson['num']}
 <b>Дисциплина: </b>{lesson['name']}
 <b>Время: </b>{lesson['time']}
-<b>Тип: </b>{lesson_type_dict[lesson['type']]}
+<b>Тип: </b>{lesson['type']}
 <b>Аудитория: </b>{lesson['place']}</blockquote>"""
                 if index != len(day['lessons']) - 1: reply_text += '\n'
         else:
@@ -81,6 +83,14 @@ async def cmd_start(message: Message, state: FSMContext):
     await message.answer("""Привет! Отправь полный номер группы и я его запомню
 P.s.: если что-то сломалось, пропиши /start""")
     await state.set_state(UserStates.week_num)
+
+
+@dp.message(Command('dump'))
+async def dump_users(message: Message):
+    with open('users.txt', 'w') as output_file:
+        for nickname in users_set:
+            output_file.write(nickname + '\n')
+    await message.answer(text='Дамп был создан')
     
 
 @dp.message(UserStates.week_num)
@@ -101,6 +111,7 @@ async def ind_group(message: Message, state: FSMContext):
 
 @dp.message(F.text.lower() == "открыть расписание", UserStates.sched_soup)
 async def schedule(message: Message, state: FSMContext):
+    users_set.add(message.from_user.username)
     user_data = await state.get_data()
     soup = user_data.get('sched_soup')
     text = schedule_parser(parser.parser(soup)[0])
@@ -141,7 +152,6 @@ async def exit(call: CallbackQuery, state: FSMContext):
 async def change(message: Message, state: FSMContext):
     await message.answer("Отправь полный номер группы и я его запомню")
     await state.set_state(UserStates.week_num)
-
 
 
 async def main():
