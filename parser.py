@@ -19,12 +19,12 @@ time_dict = {
     8: "20:30 - 22:00"
 }
 
-#dictionary for lesson type
-lesson_type_dict = {
-    'Практическое занятие': 'sem',
-    'Лекция': 'lect',
-    'Лабораторная работа': 'lab'
-}
+# #dictionary for lesson type
+# lesson_type_dict = {
+#     'Практическое занятие': 'sem',
+#     'Лекция': 'lect',
+#     'Лабораторная работа': 'lab'
+# }
 
 # List if days of the week
 days_of_week = [
@@ -54,7 +54,6 @@ def get_soup_shedule(group_dict: dict):
     soup = BeautifulSoup(response, 'html.parser')
     if soup.find('div'): cur_week = int(soup.find('input', id='weekNum').get('value'))
     else: cur_week = None
-
     return soup, cur_week
 
 
@@ -71,7 +70,7 @@ def parser(soup):
             date = date_text.split(', ')[1]
             cur_day = classes.Day(date=date, name=string.capwords(day)) # date
 
-            slots = day_table.find_all('tr', class_='slot load-lecture') + day_table.find_all('tr', class_='slot load-seminar-2') + day_table.find_all('tr', class_='slot load-lab')
+            slots = day_table.find_all('tr', class_='slot load-lecture') + day_table.find_all('tr', class_='slot load-seminar-2') + day_table.find_all('tr', class_='slot load-lab') + day_table.find_all('tr', class_='slot load-critical')
             if slots:
                 cur_day.lessons = []
                 for slot in slots:
@@ -87,8 +86,7 @@ def parser(soup):
                         title = lesson_link.contents[0].strip() # name of lesson
                         cur_less.name = title
 
-                        lesson_type = lesson_type_dict[lesson_link.i.get_text(strip=True)] # type of lesson from dict
-                        cur_less.type = lesson_type
+                        cur_less.type = lesson_link.i.get_text(strip=True).replace('\n                 ', '') # type of lesson
 
                         location_parts = list(lesson_link.stripped_strings)[2]
                         match = re.search(r'(\d+)\s*корпус\s*-\s*([\d/*.]+|[\w/ №\d]+)', location_parts)
