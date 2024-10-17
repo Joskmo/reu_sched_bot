@@ -25,7 +25,6 @@ dp = Dispatcher()
 
 chatId_to_group = {}
 
-
 users_set = set()
 with open('users.txt', 'r') as file:
     for line in file:
@@ -44,6 +43,7 @@ def open_shed_kb() -> ReplyKeyboardMarkup:
         one_time_keyboard = True
     )
 
+
 def schedule_navi() -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
     kb.button(text="<<<", callback_data="prev_week")
@@ -51,6 +51,7 @@ def schedule_navi() -> InlineKeyboardMarkup:
     kb.button(text="Выйти из расписания", callback_data="sched_exit")
     kb.adjust(2)
     return kb.as_markup()
+
 
 def schedule_parser(schedule: dict) -> str:
     reply_text = ""
@@ -111,13 +112,14 @@ async def ind_group(message: Message, state: FSMContext):
 
 @dp.message(F.text.lower() == "открыть расписание", UserStates.sched_soup)
 async def schedule(message: Message, state: FSMContext):
-    users_set.add(message.from_user.username)
+    if message.from_user.username:
+        users_set.add(message.from_user.username)
     user_data = await state.get_data()
     soup = user_data.get('sched_soup')
     text = schedule_parser(parser.parser(soup)[0])
     reply_text = f"<b>Расписание для группы </b>{chatId_to_group[str(message.chat.id)]}\n<b>Неделя №{user_data.get('week_num')}</b>\n" + text
     await state.update_data(week_num=user_data.get('week_num'))
-    await message.answer(text=text, reply_markup=schedule_navi())
+    await message.answer(text=reply_text, reply_markup=schedule_navi())
 
 
 @dp.callback_query(lambda c: c.data in ['prev_week', 'next_week'], UserStates.sched_soup)
