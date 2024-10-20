@@ -136,7 +136,7 @@ async def week_change(call: CallbackQuery, state: FSMContext):
     text = schedule_parser(parser.parser(soup)[0])
     reply_text = f"<b>Расписание для группы </b>{group_num}\n<b>Неделя №{week_number}</b>\n" + text
     await call.message.edit_text(reply_text, reply_markup=schedule_navi())
-    await call.answer(cache_time=1)
+    await call.answer(f"Неделя №{week_number}", show_alert=False, cache_time=1)
     with open('sample.html', 'w', encoding='utf-8') as file:
         file.write(f'{soup}')
 
