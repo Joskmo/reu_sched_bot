@@ -137,6 +137,8 @@ async def week_change(call: CallbackQuery, state: FSMContext):
     reply_text = f"<b>Расписание для группы </b>{group_num}\n<b>Неделя №{week_number}</b>\n" + text
     await call.message.edit_text(reply_text, reply_markup=schedule_navi())
     await call.answer(cache_time=1)
+    with open('sample.html', 'w', encoding='utf-8') as file:
+        file.write(f'{soup}')
 
 
 @dp.callback_query(F.data.casefold() == 'sched_exit', UserStates.sched_soup)

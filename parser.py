@@ -1,5 +1,4 @@
 import requests
-import json
 import re
 import classes as classes
 import string
@@ -18,13 +17,6 @@ time_dict = {
     7: "18:55 - 20:25", 
     8: "20:30 - 22:00"
 }
-
-# #dictionary for lesson type
-# lesson_type_dict = {
-#     'Практическое занятие': 'sem',
-#     'Лекция': 'lect',
-#     'Лабораторная работа': 'lab'
-# }
 
 # List if days of the week
 days_of_week = [
@@ -69,8 +61,7 @@ def parser(soup):
             date_text = day_table.find('h5').get_text()
             date = date_text.split(', ')[1]
             cur_day = classes.Day(date=date, name=string.capwords(day)) # date
-
-            slots = day_table.find_all('tr', class_='slot load-lecture') + day_table.find_all('tr', class_='slot load-seminar-2') + day_table.find_all('tr', class_='slot load-lab') + day_table.find_all('tr', class_='slot load-critical')
+            slots = day_table.select('tr[class^="slot load"]:not([class="slot load-empty"])')
             if slots:
                 cur_day.lessons = []
                 for slot in slots:
