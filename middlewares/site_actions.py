@@ -1,8 +1,10 @@
 import requests
 import re
-import classes as classes
+import middlewares.classes as classes
 import string
 from bs4 import BeautifulSoup
+
+from middlewares import shared as sh
 
 rasp_dict = {}
 
@@ -19,45 +21,41 @@ time_dict = {
 }
 
 # List if days of the week
-days_of_week = [
+days_of_week = (
     "ПОНЕДЕЛЬНИК",
     "ВТОРНИК",
     "СРЕДА",
     "ЧЕТВЕРГ",
     "ПЯТНИЦА",
     "СУББОТА"
-]
+)
 
+link = "https://rasp.rea.ru/Schedule/ScheduleCard"
 headers = {
-    'X-Requested-With': 'XMLHttpRequest',
-}
-
-# Default link
-link = "https://rasp.rea.ru/Schedule/ScheduleCard?selection="
+        'X-Requested-With': 'XMLHttpRequest',
+    }
 
 
-def get_soup_shedule(group_dict: dict):
-    group_link = link + group_dict['group_num'].lower() + "&weekNum=" + (str(group_dict['week_num']) if group_dict['week_num'] else "")
+def get_schedule_soup(group_dict: dict):    
     response = requests.get(
-        group_link,
+        url=link,
+        params=group_dict,
         headers=headers,
-    ).text
+    )
+    soup = BeautifulSoup(response.text, 'html.parser')
+    if soup.find('div'): week_num = int(soup.find('input', id='weekNum').get('value'))
+    else: week_num = None
+    return soup, week_num
 
-    soup = BeautifulSoup(response, 'html.parser')
-    if soup.find('div'): cur_week = int(soup.find('input', id='weekNum').get('value'))
-    else: cur_week = None
-    return soup, cur_week
 
-
-def parser(soup):
+def get_schedule_text(soup: BeautifulSoup) -> str:
+    schedule_text: str = ""
     tables = soup.find_all('table', class_=['table table-light', 'table table-light today'])
-    cur_week = soup.find('input', id='weekNum').get('value')
+    # cur_week = soup.find('input', id='weekNum').get('value')
 
-    for day, day_num in zip(days_of_week, range(0, 6)):
-        
+    for day in days_of_week:
         day_table = next((table for table in tables if day in table.find('h5').get_text()), None)
         if day_table:
-
             date_text = day_table.find('h5').get_text()
             date = date_text.split(', ')[1]
             cur_day = classes.Day(date=date, name=string.capwords(day)) # date
@@ -86,15 +84,22 @@ def parser(soup):
                         else:
                             location = "Неизвестно"
                         cur_less.place = location
-
+                        
                     cur_day.lessons.append(cur_less)
-                    
-                # sort for classes by num: 
-                n = len(cur_day.lessons)
-                for i in range(0, n-1):
-                    for j in range(0, n-1):
-                        if (cur_day.lessons[j].num > cur_day.lessons[j+1].num): 
-                            cur_day.lessons[j], cur_day.lessons[j+1] = cur_day.lessons[j+1], cur_day.lessons[j]
+
             day_dict = cur_day.model_dump()
-            rasp_dict[str(day_num)] = day_dict
-    return rasp_dict, int(cur_week)
+            
+            schedule_text += f"""----------------------------------------------
+Дата: {day_dict['date']}, {day_dict['name']}"""
+            if day_dict['lessons']:  # Проверяем, есть ли занятия
+                for index, lesson in enumerate(day_dict['lessons']):
+                    schedule_text += f"""<blockquote><b>Номер пары: </b>{lesson['num']}
+<b>Дисциплина: </b>{lesson['name']}
+<b>Время: </b>{lesson['time']}
+<b>Тип: </b>{lesson['type']}
+<b>Аудитория: </b>{lesson['place']}</blockquote>"""
+                    if index != len(day_dict['lessons']) - 1: schedule_text += '\n'
+            else:
+                schedule_text += f"<blockquote>Занятий нет</blockquote>"
+
+    return schedule_text
