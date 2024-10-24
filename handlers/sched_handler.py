@@ -1,7 +1,7 @@
 from aiogram import Router
 from aiogram import F
 from aiogram.types import Message, CallbackQuery
-from aiogram.filters import CommandStart, Command
+from aiogram.filters import CommandStart
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 
@@ -28,7 +28,7 @@ P.s.: если что-то сломалось, пропиши /start""")
 @router.message(UserStates.group_num)
 async def get_schedule(message: Message, state: FSMContext):
     soup, week_num = site_actions.get_schedule_soup({'selection': message.text.lower(),
-                                              'week_num': sh.cur_week})
+                                              'weekNum': sh.cur_week})
     if week_num:
         await state.update_data(
             week_num = week_num,
@@ -55,7 +55,7 @@ async def week_change(call: CallbackQuery, state: FSMContext):
 
     await state.update_data(week_num = week_number)
     soup, _ = site_actions.get_schedule_soup({'selection': group_num,
-                                              'week_num': week_number})
+                                              'weekNum': week_number})
     
     reply_text = f"<b>Расписание для группы </b>{group_num}\n<b>Неделя №{week_number}</b>\n"
     reply_text += site_actions.get_schedule_text(soup)
@@ -69,14 +69,14 @@ async def exit(call: CallbackQuery, state: FSMContext):
     await state.clear()
     await call.message.delete()
     await call.message.answer("Для возврата в расписание отправь номер группы")
-    await state.set_state(UserStates.week_num)
+    await state.set_state(UserStates.group_num)
 
 
 @router.callback_query(F.data.casefold() == 'current_week', UserStates.week_num)
 async def goto_cur_week(call: CallbackQuery, state: FSMContext):
     user_data = await state.get_data()
     soup, _ = site_actions.get_schedule_soup({'selection': user_data.get('group_num'),
-                                              'week_num': sh.cur_week})
+                                              'weekNum': sh.cur_week})
     if sh.cur_week == user_data.get('week_num'):
         await call.answer(f'Расписание на текущую неделю уже открыто', cache_time=1)
     else:

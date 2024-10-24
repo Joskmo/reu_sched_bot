@@ -51,7 +51,6 @@ def get_schedule_soup(group_dict: dict):
 def get_schedule_text(soup: BeautifulSoup) -> str:
     schedule_text: str = ""
     tables = soup.find_all('table', class_=['table table-light', 'table table-light today'])
-    # cur_week = soup.find('input', id='weekNum').get('value')
 
     for day in days_of_week:
         day_table = next((table for table in tables if day in table.find('h5').get_text()), None)
