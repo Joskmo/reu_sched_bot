@@ -30,7 +30,7 @@ days_of_week = (
     "СУББОТА"
 )
 
-link = "https://rasp.rea.ru/Schedule/ScheduleCard"
+link = "http://rasp.rea.ru/Schedule/ScheduleCard"
 headers = {
         'X-Requested-With': 'XMLHttpRequest',
     }
