@@ -10,7 +10,7 @@ def upd_week_num():
     headers = {
         'X-Requested-With': 'XMLHttpRequest',
     }
-    link = "https://rasp.rea.ru/Schedule/ScheduleCard?selection=15.27д-би01/24б"
+    link = "http://rasp.rea.ru/Schedule/ScheduleCard?selection=15.27д-би01/24б"
     try:
         response = requests.get(url=link, headers=headers, verify=False)
         response.raise_for_status()
