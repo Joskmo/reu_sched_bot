@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import List, Optional
 
+
 class Lesson(BaseModel):
     num: int # <needs to be parsed>
     type: Optional[str] = None # lecture_type
@@ -8,11 +9,13 @@ class Lesson(BaseModel):
     name: Optional[str] = None # title
     place: Optional[str] = None # location
 
+
 class Day(BaseModel):
     date: str # <needs to be parsed>
     name: str
     first_lesson_num: Optional[int] = None # <from min num>
     lessons: Optional[List[Lesson]] = None # <smt like link>
+
 
 class Schedule(BaseModel):
     group: str

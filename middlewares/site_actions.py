@@ -41,6 +41,7 @@ def get_schedule_soup(group_dict: dict):
         url=link,
         params=group_dict,
         headers=headers,
+        verify=False,
     )
     soup = BeautifulSoup(response.text, 'html.parser')
     if soup.find('div'): week_num = int(soup.find('input', id='weekNum').get('value'))
