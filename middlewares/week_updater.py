@@ -12,7 +12,7 @@ def upd_week_num():
     }
     link = "https://rasp.rea.ru/Schedule/ScheduleCard?selection=15.27д-би01/24б"
     try:
-        response = requests.get(url=link, headers=headers)
+        response = requests.get(url=link, headers=headers, verify=False)
         response.raise_for_status()
         data = response.text
         soup = BeautifulSoup(data, 'html.parser')
