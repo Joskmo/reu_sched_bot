@@ -5,6 +5,7 @@ from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
 from aiogram.client.default import DefaultBotProperties
 
+
 from config import config
 from middlewares.week_updater import scheduler, upd_week_num
 from handlers import sched_handler, extra
@@ -16,6 +17,7 @@ bot = Bot(
         parse_mode=ParseMode.HTML
     )
 )
+
 
 dp = Dispatcher()
 
@@ -32,5 +34,9 @@ async def main():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    asyncio.run(main())
+    try:
+        logging.basicConfig(level=logging.INFO)
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        scheduler.shutdown()
+        logging.info("Shutting down...")
