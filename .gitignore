@@ -3,4 +3,4 @@
 **/__pycache__/
 sample*
 users.txt
-test*
+**/test*
