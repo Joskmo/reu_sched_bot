@@ -1,10 +1,11 @@
-import requests
+import aiohttp
 import re
 import middlewares.classes as classes
 import string
 from bs4 import BeautifulSoup
+from typing import Union
 
-from middlewares import shared as sh
+
 
 rasp_dict = {}
 
@@ -36,17 +37,26 @@ headers = {
     }
 
 
-def get_schedule_soup(group_dict: dict):    
-    response = requests.get(
-        url=link,
-        params=group_dict,
-        headers=headers,
-        verify=False,
-    )
-    soup = BeautifulSoup(response.text, 'html.parser')
-    if soup.find('div'): week_num = int(soup.find('input', id='weekNum').get('value'))
-    else: week_num = None
-    return soup, week_num
+async def get_schedule_soup(group_dict: dict) -> Union[BeautifulSoup, int]:
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                url=link,
+                params=group_dict,
+                headers=headers,
+            ) as response:
+                response.raise_for_status()
+                data = await response.text()
+                soup = BeautifulSoup(data, 'html.parser')
+                if soup.find('div'):
+                    week_num = int(soup.find('input', id='weekNum').get('value'))
+                else:
+                    week_num = None
+                return soup, week_num
+            
+    except aiohttp.ClientError as e:
+        raise Exception(f"Ошибка при выполнении запроса: {e}")
+            
 
 
 def get_schedule_text(soup: BeautifulSoup) -> str:

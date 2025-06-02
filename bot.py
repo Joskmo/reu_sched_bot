@@ -21,9 +21,9 @@ bot = Bot(
 
 dp = Dispatcher()
 
-
+# Настроить асинхронную задачу для обновления номера недели
 async def main():
-    upd_week_num()
+    await upd_week_num()
     scheduler.start()
     dp.include_routers(
         sched_handler.router,
