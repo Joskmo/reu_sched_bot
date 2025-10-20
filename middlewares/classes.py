@@ -3,18 +3,18 @@ from typing import List, Optional
 
 
 class Lesson(BaseModel):
-    num: int # <needs to be parsed>
-    type: Optional[str] = None # lecture_type
-    time: Optional[str] = None # <needs to be parsed from num>
-    name: Optional[str] = None # title
-    place: Optional[str] = None # location
+    num: int
+    type: Optional[str] = None
+    time: Optional[str] = None
+    name: Optional[str] = None
+    place: Optional[str] = None
 
 
 class Day(BaseModel):
-    date: str # <needs to be parsed>
+    date: str
     name: str
-    first_lesson_num: Optional[int] = None # <from min num>
-    lessons: Optional[List[Lesson]] = None # <smt like link>
+    first_lesson_num: Optional[int] = None
+    lessons: Optional[List[Lesson]] = None
 
 
 class Schedule(BaseModel):

@@ -6,10 +6,10 @@ load_dotenv()
 
 
 class Settings(BaseSettings):
-    TG_TOKEN: str = Field(env='TG_TOKEN')
+    TG_TOKEN: str = Field(env='TG_TOKEN') # type: ignore
 
     class Config:
         env_file = './.env'
 
 
-config = Settings()
+config = Settings() # type: ignore

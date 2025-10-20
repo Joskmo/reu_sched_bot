@@ -3,7 +3,7 @@ import re
 import middlewares.classes as classes
 import string
 from bs4 import BeautifulSoup
-from typing import Union
+from typing import Optional, Tuple
 
 
 
@@ -37,7 +37,7 @@ headers = {
     }
 
 
-async def get_schedule_soup(group_dict: dict) -> Union[BeautifulSoup, int]:
+async def get_schedule_soup(group_dict: dict) -> Tuple[BeautifulSoup, Optional[int]]:
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(
@@ -49,7 +49,9 @@ async def get_schedule_soup(group_dict: dict) -> Union[BeautifulSoup, int]:
                 data = await response.text()
                 soup = BeautifulSoup(data, 'html.parser')
                 if soup.find('div'):
-                    week_num = int(soup.find('input', id='weekNum').get('value'))
+                    week_input = soup.find('input', id='weekNum')
+                    week_value = week_input.get('value') if week_input else None
+                    week_num = int(week_value) if week_value is not None else None
                 else:
                     week_num = None
                 return soup, week_num
@@ -75,7 +77,14 @@ def get_schedule_text(soup: BeautifulSoup) -> str:
                 for slot in slots:
                     
                     # info about lesson num(). We need only num of pair -> use regular expression
-                    time_info = int(re.match(r'\d', (slot.find('span', class_='pcap').get_text(strip=True)))[0])
+                    pcap_span = slot.find('span', class_='pcap')
+                    if not pcap_span:
+                        continue
+                    pcap_text = pcap_span.get_text(strip=True)
+                    time_match = re.search(r'\d+', pcap_text)
+                    if not time_match:
+                        continue
+                    time_info = int(time_match.group(0))
                     
                     cur_less = classes.Lesson(num=time_info)
                     cur_less.time = time_dict[time_info]

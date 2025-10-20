@@ -19,9 +19,13 @@ async def upd_week_num():
                 data = await response.text()
                 soup = BeautifulSoup(data, 'html.parser')
                 if soup.find('div'): 
-                    cur_week = int(soup.find('input', id='weekNum').get('value'))
-                    sh.cur_week = cur_week
-                    print(cur_week)
+                    week_input = soup.find('input', id='weekNum')
+                    if week_input and week_input.get('value'):
+                        cur_week = int(week_input.get('value'))
+                        sh.cur_week = cur_week
+                        print(cur_week)
+                    else:
+                        print("Не удалось найти номер недели в ответе.")
 
     except aiohttp.ClientError as e:
         print(f"Ошибка при получении данных: {e}")
