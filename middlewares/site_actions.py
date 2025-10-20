@@ -110,7 +110,7 @@ def get_schedule_text(soup: BeautifulSoup) -> str:
             
             schedule_text += f"""----------------------------------------------
 Дата: {day_dict['date']}, {day_dict['name']}"""
-            if day_dict['lessons']:  # Проверяем, есть ли занятия
+            if day_dict['lessons']:
                 for index, lesson in enumerate(day_dict['lessons']):
                     schedule_text += f"""<blockquote><b>Номер пары: </b>{lesson['num']}
 <b>Дисциплина: </b>{lesson['name']}

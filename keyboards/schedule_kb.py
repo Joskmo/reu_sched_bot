@@ -8,8 +8,14 @@ def schedule_navi() -> InlineKeyboardMarkup:
     kb.button(text=">>>", callback_data="next_week")
     kb.adjust(2)
     kb.row(
-        InlKbBtn(text="Перейти к текущей неделе", callback_data="current_week"),
-        InlKbBtn(text="Выйти из расписания", callback_data="sched_exit"),
+        InlKbBtn(
+            text="Перейти к текущей неделе",
+            callback_data="current_week"
+        ),
+        InlKbBtn(
+            text="Выйти из расписания",
+            callback_data="sched_exit"
+        ),
         width=1
     )
     return kb.as_markup()

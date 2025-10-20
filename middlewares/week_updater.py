@@ -33,9 +33,15 @@ async def upd_week_num():
 
 scheduler = AsyncIOScheduler()
 moscow_tz = pytz.timezone('Europe/Moscow')
-scheduler.add_job(upd_week_num,
-                  trigger=CronTrigger(day_of_week='mon', hour=0, minute=1, timezone=moscow_tz),
-                  id="week_num_updater",
-                  name="Обновление номера недели"
-                  )
+scheduler.add_job(
+    upd_week_num,
+    trigger=CronTrigger(
+        day_of_week='mon',
+        hour=0,
+        minute=1,
+        timezone=moscow_tz
+    ),
+    id="week_num_updater",
+    name="Обновление номера недели"
+)
 

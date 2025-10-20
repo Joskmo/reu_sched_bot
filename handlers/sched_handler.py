@@ -1,5 +1,4 @@
-from aiogram import Router
-from aiogram import F
+from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import CommandStart
 from aiogram.fsm.state import State, StatesGroup
@@ -31,17 +30,25 @@ P.s.: если что-то сломалось, пропиши /start""")
 
 @router.message(UserStates.group_num)
 async def get_schedule(message: Message, state: FSMContext):
-    soup, week_num = await site_actions.get_schedule_soup({'selection': message.text.lower() if message.text else "",
-                                              'weekNum': sh.cur_week})
+    soup, week_num = await site_actions.get_schedule_soup({
+        'selection': message.text.lower() if message.text else "",
+        'weekNum': sh.cur_week
+    })
     if week_num:
         await state.update_data(
             week_num = week_num,
             group_num = message.text.lower() if message.text else ""
         )
         await state.set_state(UserStates.week_num)
-        schedule_text: str = f"<b>Расписание для группы </b>{message.text.lower() if message.text else ''}\n<b>Неделя №{week_num}</b>\n"
+        schedule_text: str = (
+            f"<b>Расписание для группы </b>{message.text.lower() if message.text else ''}\n"
+            f"<b>Неделя №{week_num}</b>\n"
+        )
         schedule_text += site_actions.get_schedule_text(soup)
-        await message.answer(text=schedule_text, reply_markup=sched_kb.schedule_navi())
+        await message.answer(
+            text=schedule_text,
+            reply_markup=sched_kb.schedule_navi()
+        )
     else:
         await message.answer("Расписание для указанной группы не найдено")
 
@@ -60,15 +67,20 @@ async def week_change(call: CallbackQuery, state: FSMContext):
             week_number += 1
 
     await state.update_data(week_num = week_number)
-    soup, _ = await site_actions.get_schedule_soup({'selection': group_num,
-                                              'weekNum': week_number})
+    soup, _ = await site_actions.get_schedule_soup({
+        'selection': group_num,
+        'weekNum': week_number
+    })
     
     reply_text = f"<b>Расписание для группы </b>{group_num}\n<b>Неделя №{week_number}</b>\n"
     reply_text += site_actions.get_schedule_text(soup)
     if isinstance(call.message, Message):
         await call.message.edit_text(reply_text, reply_markup=sched_kb.schedule_navi())
     else:
-        await call.message.answer(reply_text, reply_markup=sched_kb.schedule_navi()) if call.message else None
+        await call.message.answer(
+            reply_text,
+            reply_markup=sched_kb.schedule_navi()
+        ) if call.message else None
     await call.answer(f"Неделя №{week_number}", show_alert=False, cache_time=1)
 
 
@@ -87,7 +99,10 @@ async def goto_cur_week(call: CallbackQuery, state: FSMContext):
     soup, _ = await site_actions.get_schedule_soup({'selection': user_data.get('group_num'),
                                               'weekNum': sh.cur_week})
     if sh.cur_week == user_data.get('week_num'):
-        await call.answer(f'Расписание на текущую неделю уже открыто', cache_time=1)
+        await call.answer(
+            f'Расписание на текущую неделю уже открыто',
+            cache_time=1
+        )
     else:
         await state.update_data(
             week_num = sh.cur_week,
@@ -96,7 +111,17 @@ async def goto_cur_week(call: CallbackQuery, state: FSMContext):
         schedule_text: str = f"<b>Расписание для группы </b>{user_data.get('group_num')}\n<b>Неделя №{sh.cur_week}</b>\n"
         schedule_text += site_actions.get_schedule_text(soup)
         if isinstance(call.message, Message):
-            await call.message.edit_text(text=schedule_text, reply_markup=sched_kb.schedule_navi())
+            await call.message.edit_text(
+                text=schedule_text,
+                reply_markup=sched_kb.schedule_navi()
+            )
         else:
-            await call.message.answer(text=schedule_text, reply_markup=sched_kb.schedule_navi()) if call.message else None
-        await call.answer(f"Неделя №{sh.cur_week} (текущая)", cache_time=1)
+            await call.message.answer(
+                text=schedule_text,
+                reply_markup=sched_kb.schedule_navi()
+            ) if call.message else None
+
+        await call.answer(
+            text=f"Неделя №{sh.cur_week} (текущая)",
+            cache_time=1
+        )
