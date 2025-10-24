@@ -1,17 +1,24 @@
 import aiohttp
 import pytz
-from bs4 import BeautifulSoup
+import logging
+
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
+from bs4 import BeautifulSoup
 
-import middlewares.shared as sh
+from ..core.db import redis
 
 
-async def upd_week_num():
+async def upd_week_num() -> None:
     headers = {
         'X-Requested-With': 'XMLHttpRequest',
     }
-    link = "http://rasp.rea.ru/Schedule/ScheduleCard?selection=15.27д-би01/24б"
+    group_num = await redis.get("base_group")
+    group_num = group_num.decode('utf-8') if group_num else None
+    if not group_num:
+        logging.info("Base group not set. Skipping week number update.")
+        return
+    link = f"http://rasp.rea.ru/Schedule/ScheduleCard?selection={group_num}"
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(url=link, headers=headers) as response:
@@ -19,13 +26,13 @@ async def upd_week_num():
                 data = await response.text()
                 soup = BeautifulSoup(data, 'html.parser')
                 if soup.find('div'): 
-                    week_input = soup.find('input', id='weekNum')
+                    week_input: BeautifulSoup = soup.find('input', id='weekNum')
                     if week_input and week_input.get('value'):
                         cur_week = int(week_input.get('value'))
-                        sh.cur_week = cur_week
-                        print(cur_week)
+                        await redis.set(name="cur_week", value=str(cur_week))
+                        logging.info(f"Updated week number. Set week_num to {cur_week}")
                     else:
-                        print("Не удалось найти номер недели в ответе.")
+                        logging.warning("Week number input not found in the response.")
 
     except aiohttp.ClientError as e:
         print(f"Ошибка при получении данных: {e}")
@@ -44,4 +51,3 @@ scheduler.add_job(
     id="week_num_updater",
     name="Обновление номера недели"
 )
-

@@ -4,9 +4,13 @@ from aiogram.filters import CommandStart
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 
-import middlewares.site_actions as site_actions
-import keyboards.schedule_kb as sched_kb
-import middlewares.shared as sh
+import logging
+
+from redis.asyncio import Redis
+
+from ..core import site_actions
+from ..keyboards import schedule_kb as sched_kb
+
 
 router = Router()
 
@@ -18,21 +22,19 @@ class UserStates(StatesGroup):
 @router.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext):
     user = message.from_user
-    if user and user.username:
-        sh.users_set.add(user.username)
-    elif message.chat:
-        sh.users_set.add(str(message.chat.id))
+    logging.info(f"User @{user.username} ({user.id}) started the bot.")
     await state.clear()
-    await message.answer("""Привет! Отправь полный номер группы и я его запомню
-P.s.: если что-то сломалось, пропиши /start""")
+    await message.answer(
+        text = (f"Привет! Отправь полный номер группы и я его запомню"
+                f"P.s.: если что-то сломалось, пропиши /start""")
+    )
     await state.set_state(UserStates.group_num)
 
 
 @router.message(UserStates.group_num)
-async def get_schedule(message: Message, state: FSMContext):
+async def get_schedule(message: Message, state: FSMContext, redis: Redis):
     soup, week_num = await site_actions.get_schedule_soup({
         'selection': message.text.lower() if message.text else "",
-        'weekNum': sh.cur_week
     })
     if week_num:
         await state.update_data(
@@ -49,6 +51,11 @@ async def get_schedule(message: Message, state: FSMContext):
             text=schedule_text,
             reply_markup=sched_kb.schedule_navi()
         )
+        if message.text:
+            await redis.set(
+                name=f"base_group",
+                value=f"{message.text.lower()}"
+            )
     else:
         await message.answer("Расписание для указанной группы не найдено")
 
@@ -72,16 +79,26 @@ async def week_change(call: CallbackQuery, state: FSMContext):
         'weekNum': week_number
     })
     
-    reply_text = f"<b>Расписание для группы </b>{group_num}\n<b>Неделя №{week_number}</b>\n"
+    reply_text = (
+        f"<b>Расписание для группы </b>{group_num}\n"
+        "<b>Неделя №{week_number}</b>\n"
+    )
     reply_text += site_actions.get_schedule_text(soup)
     if isinstance(call.message, Message):
-        await call.message.edit_text(reply_text, reply_markup=sched_kb.schedule_navi())
+        await call.message.edit_text(
+            text=reply_text,
+            reply_markup=sched_kb.schedule_navi()
+        )
     else:
         await call.message.answer(
-            reply_text,
+            text=reply_text,
             reply_markup=sched_kb.schedule_navi()
         ) if call.message else None
-    await call.answer(f"Неделя №{week_number}", show_alert=False, cache_time=1)
+    await call.answer(
+        text=f"Неделя №{week_number}",
+        show_alert=False,
+        cache_time=1
+    )
 
 
 @router.callback_query(F.data.casefold() == 'sched_exit', UserStates.week_num)
@@ -94,21 +111,27 @@ async def exit(call: CallbackQuery, state: FSMContext):
 
 
 @router.callback_query(F.data.casefold() == 'current_week', UserStates.week_num)
-async def goto_cur_week(call: CallbackQuery, state: FSMContext):
+async def goto_cur_week(call: CallbackQuery, state: FSMContext, redis: Redis):
     user_data = await state.get_data()
-    soup, _ = await site_actions.get_schedule_soup({'selection': user_data.get('group_num'),
-                                              'weekNum': sh.cur_week})
-    if sh.cur_week == user_data.get('week_num'):
+    cur_week = await int(redis.get("cur_week"))
+    soup, _ = await site_actions.get_schedule_soup({
+        'selection': user_data.get('group_num'),
+        'weekNum': cur_week
+    })
+    if cur_week == user_data.get('week_num'):
         await call.answer(
             f'Расписание на текущую неделю уже открыто',
             cache_time=1
         )
     else:
         await state.update_data(
-            week_num = sh.cur_week,
+            week_num = cur_week,
             group_num = user_data.get('group_num')
-            )
-        schedule_text: str = f"<b>Расписание для группы </b>{user_data.get('group_num')}\n<b>Неделя №{sh.cur_week}</b>\n"
+        )
+        schedule_text: str = (
+            f"<b>Расписание для группы </b>{user_data.get('group_num')}\n"
+            f"<b>Неделя №{cur_week}</b>\n"
+        )
         schedule_text += site_actions.get_schedule_text(soup)
         if isinstance(call.message, Message):
             await call.message.edit_text(
@@ -122,6 +145,6 @@ async def goto_cur_week(call: CallbackQuery, state: FSMContext):
             ) if call.message else None
 
         await call.answer(
-            text=f"Неделя №{sh.cur_week} (текущая)",
+            text=f"Неделя №{cur_week} (текущая)",
             cache_time=1
         )

@@ -4,24 +4,36 @@ import asyncio
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
 from aiogram.client.default import DefaultBotProperties
+from aiogram.fsm.storage.redis import RedisStorage
 
+from .config import TelegramSettings
+from .core.db import redis
+from .middlewares.week_updater import scheduler, upd_week_num
+from .handlers import sched_handler, extra
+from .middlewares.redis import RedisMiddleware
 
-from config import config
-from middlewares.week_updater import scheduler, upd_week_num
-from handlers import sched_handler, extra
+telegram_config = TelegramSettings()
+
+redis_storage = RedisStorage(
+    redis=redis,
+)
 
 
 bot = Bot(
-    token = config.TG_TOKEN,
+    token = telegram_config.token,
     default=DefaultBotProperties(
         parse_mode=ParseMode.HTML
     )
 )
 
 
-dp = Dispatcher()
+dp = Dispatcher(
+    storage = RedisStorage(redis=redis),
+    name = "reu_sched_bot",
+)
+dp.update.middleware(RedisMiddleware(redis))
 
-# Настроить асинхронную задачу для обновления номера недели
+
 async def main():
     await upd_week_num()
     scheduler.start()

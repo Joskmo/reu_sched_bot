@@ -1,9 +1,10 @@
 import aiohttp
 import re
-import middlewares.classes as classes
 import string
 from bs4 import BeautifulSoup
 from typing import Optional, Tuple
+
+from .models import Lesson, Day
 
 
 
@@ -70,7 +71,7 @@ def get_schedule_text(soup: BeautifulSoup) -> str:
         if day_table:
             date_text = day_table.find('h5').get_text()
             date = date_text.split(', ')[1]
-            cur_day = classes.Day(date=date, name=string.capwords(day)) # date
+            cur_day = Day(date=date, name=string.capwords(day)) # date
             slots = day_table.select('tr[class^="slot load"]:not([class="slot load-empty"])')
             if slots:
                 cur_day.lessons = []
@@ -86,7 +87,7 @@ def get_schedule_text(soup: BeautifulSoup) -> str:
                         continue
                     time_info = int(time_match.group(0))
                     
-                    cur_less = classes.Lesson(num=time_info)
+                    cur_less = Lesson(num=time_info)
                     cur_less.time = time_dict[time_info]
 
                     lesson_link = slot.find('a', class_='task')
