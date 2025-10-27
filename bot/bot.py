@@ -8,7 +8,7 @@ from aiogram.fsm.storage.redis import RedisStorage
 
 from .config import TelegramSettings
 from .core.db import redis
-from .middlewares.week_updater import scheduler, upd_week_num
+from .core.week_updater import scheduler, upd_week_num
 from .handlers import sched_handler, extra
 from .middlewares.redis import RedisMiddleware
 

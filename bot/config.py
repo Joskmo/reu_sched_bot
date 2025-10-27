@@ -3,7 +3,7 @@ from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class RedisSettings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="REDIS_", env_file=".env")
+    model_config = SettingsConfigDict(env_prefix="REDIS_", env_file=".env", extra="ignore")
     host: str = Field(..., description="Redis host")
     port: int = 6379
     db: int = 0
@@ -17,5 +17,5 @@ class RedisSettings(BaseSettings):
         return f"{scheme}://{auth}{self.host}:{self.port}/{self.db}"
 
 class TelegramSettings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="TG_", env_file=".env")
+    model_config = SettingsConfigDict(env_prefix="TG_", env_file=".env", extra="ignore")
     token: str

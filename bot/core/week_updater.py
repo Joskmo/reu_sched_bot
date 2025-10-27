@@ -6,7 +6,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from bs4 import BeautifulSoup
 
-from ..core.db import redis
+from .db import redis
 
 
 async def upd_week_num() -> None:

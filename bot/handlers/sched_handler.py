@@ -113,7 +113,7 @@ async def exit(call: CallbackQuery, state: FSMContext):
 @router.callback_query(F.data.casefold() == 'current_week', UserStates.week_num)
 async def goto_cur_week(call: CallbackQuery, state: FSMContext, redis: Redis):
     user_data = await state.get_data()
-    cur_week = await int(redis.get("cur_week"))
+    cur_week = int(await redis.get("cur_week"))
     soup, _ = await site_actions.get_schedule_soup({
         'selection': user_data.get('group_num'),
         'weekNum': cur_week

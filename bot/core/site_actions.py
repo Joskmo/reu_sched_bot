@@ -7,7 +7,6 @@ from typing import Optional, Tuple
 from .models import Lesson, Day
 
 
-
 rasp_dict = {}
 
 # dictionary for timetable (get time by lesson num)

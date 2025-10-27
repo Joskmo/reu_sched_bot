@@ -14,6 +14,6 @@ ENV REDIS_HOST=redis \
     REDIS_PORT=6379 \
     REDIS_DB=0
 
-COPY bot ./bot
+COPY . ./bot
 
 CMD ["python", "-m", "bot.bot"]
