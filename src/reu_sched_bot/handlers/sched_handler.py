@@ -26,7 +26,7 @@ async def cmd_start(message: Message, state: FSMContext):
     await state.clear()
     await message.answer(
         text = (
-            f"Привет! Отправь полный номер группы и я его запомню"
+            f"Привет! Отправь полный номер группы и я его запомню\n"
             f"P.s.: если что-то сломалось, пропиши /start"""
         )
     )
