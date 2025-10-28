@@ -1,5 +1,5 @@
-import logging
 import asyncio
+import logging
 
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
@@ -34,7 +34,7 @@ dp = Dispatcher(
 dp.update.middleware(RedisMiddleware(redis))
 
 
-async def main():
+async def main() -> None:
     await upd_week_num()
     scheduler.start()
     dp.include_routers(
@@ -45,10 +45,14 @@ async def main():
     await dp.start_polling(bot)
 
 
-if __name__ == "__main__":
+def run() -> None:
+    logging.basicConfig(level=logging.INFO)
     try:
-        logging.basicConfig(level=logging.INFO)
         asyncio.run(main())
     except KeyboardInterrupt:
         scheduler.shutdown()
         logging.info("Shutting down...")
+
+
+if __name__ == "__main__":
+    run()
