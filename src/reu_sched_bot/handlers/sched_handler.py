@@ -1,6 +1,6 @@
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
-from aiogram.filters import CommandStart
+from aiogram.filters import CommandStart, Command
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 
@@ -10,9 +10,13 @@ from redis.asyncio import Redis
 
 from ..core import site_actions
 from ..keyboards import schedule_kb as sched_kb
+from ..middlewares.private_chat import PrivateChatMiddleware
 
 
 router = Router()
+router.message.middleware.register(PrivateChatMiddleware())
+router.callback_query.middleware.register(PrivateChatMiddleware())
+
 
 class UserStates(StatesGroup):
     group_num = State()
@@ -153,3 +157,14 @@ async def goto_cur_week(call: CallbackQuery, state: FSMContext, redis: Redis):
             text=f"Неделя №{cur_week} (текущая)",
             cache_time=1
         )
+
+
+@router.message(Command("help"))
+async def cmd_help(message: Message):
+    help_text = (
+        "Отправь полный номер группы, чтобы получить расписание.\n"
+        "Используй кнопки <<< и >>>, чтобы листать недели.\n"
+        "Кнопка \"Перейти к текущей неделе\" возвращает на актуальную неделю.\n"
+        "Команда /start сбрасывает выбор и начинает заново."
+    )
+    await message.answer(help_text)
