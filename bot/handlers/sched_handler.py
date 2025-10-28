@@ -22,11 +22,13 @@ class UserStates(StatesGroup):
 @router.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext):
     user = message.from_user
-    logging.info(f"User @{user.username} ({user.id}) started the bot.")
+    logging.info(f"User @{user.username if user.username else 'No_nickname'} ({user.id}) started the bot.")
     await state.clear()
     await message.answer(
-        text = (f"Привет! Отправь полный номер группы и я его запомню"
-                f"P.s.: если что-то сломалось, пропиши /start""")
+        text = (
+            f"Привет! Отправь полный номер группы и я его запомню"
+            f"P.s.: если что-то сломалось, пропиши /start"""
+        )
     )
     await state.set_state(UserStates.group_num)
 
@@ -81,7 +83,7 @@ async def week_change(call: CallbackQuery, state: FSMContext):
     
     reply_text = (
         f"<b>Расписание для группы </b>{group_num}\n"
-        "<b>Неделя №{week_number}</b>\n"
+        f"<b>Неделя №{week_number}</b>\n"
     )
     reply_text += site_actions.get_schedule_text(soup)
     if isinstance(call.message, Message):
@@ -106,7 +108,10 @@ async def exit(call: CallbackQuery, state: FSMContext):
     await state.clear()
     if isinstance(call.message, Message):
         await call.message.delete()
-    await call.message.answer("Для возврата в расписание отправь номер группы") if call.message else None
+    if call.message:
+        await call.message.answer(
+            text = "Для возврата в расписание отправь номер группы"
+        )
     await state.set_state(UserStates.group_num)
 
 

@@ -1,16 +1,15 @@
 import aiohttp
 import re
 import string
+from typing import Any, Optional, Tuple
+
 from bs4 import BeautifulSoup
-from typing import Optional, Tuple
+from bs4.element import Tag
 
 from .models import Lesson, Day
 
-
-rasp_dict = {}
-
 # dictionary for timetable (get time by lesson num)
-time_dict = {
+TIME_DICT: dict[int, str] = {
     1: "08:30 - 10:00",
     2: "10:10 - 11:40",
     3: "11:50 - 13:20",
@@ -22,7 +21,7 @@ time_dict = {
 }
 
 # List if days of the week
-days_of_week = (
+DAYS_OF_WEEK: tuple[str] = (
     "ПОНЕДЕЛЬНИК",
     "ВТОРНИК",
     "СРЕДА",
@@ -31,26 +30,26 @@ days_of_week = (
     "СУББОТА"
 )
 
-link = "http://rasp.rea.ru/Schedule/ScheduleCard"
-headers = {
+LINK: str = "http://rasp.rea.ru/Schedule/ScheduleCard"
+HEADERS: dict[str, str] = {
         'X-Requested-With': 'XMLHttpRequest',
     }
 
 
-async def get_schedule_soup(group_dict: dict) -> Tuple[BeautifulSoup, Optional[int]]:
+async def get_schedule_soup(group_dict: dict[str, str]) -> Tuple[BeautifulSoup, Optional[int]]:
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(
-                url=link,
+                url=LINK,
                 params=group_dict,
-                headers=headers,
+                headers=HEADERS,
             ) as response:
                 response.raise_for_status()
                 data = await response.text()
                 soup = BeautifulSoup(data, 'html.parser')
                 if soup.find('div'):
-                    week_input = soup.find('input', id='weekNum')
-                    week_value = week_input.get('value') if week_input else None
+                    week_input: Optional[Tag] = soup.find('input', id='weekNum')
+                    week_value: Optional[str] = week_input.get('value') if week_input else None
                     week_num = int(week_value) if week_value is not None else None
                 else:
                     week_num = None
@@ -60,63 +59,87 @@ async def get_schedule_soup(group_dict: dict) -> Tuple[BeautifulSoup, Optional[i
         raise Exception(f"Ошибка при выполнении запроса: {e}")
             
 
-
 def get_schedule_text(soup: BeautifulSoup) -> str:
     schedule_text: str = ""
-    tables = soup.find_all('table', class_=['table table-light', 'table table-light today'])
+    tables: list[Tag] = soup.find_all(
+        'table', 
+        class_=['table table-light', 'table table-light today']
+    )
 
-    for day in days_of_week:
-        day_table = next((table for table in tables if day in table.find('h5').get_text()), None)
+    for day in DAYS_OF_WEEK:
+        day_table: Optional[Tag] = next(
+            (table for table in tables if day in table.find('h5').get_text()),
+            None
+        )
         if day_table:
-            date_text = day_table.find('h5').get_text()
-            date = date_text.split(', ')[1]
-            cur_day = Day(date=date, name=string.capwords(day)) # date
-            slots = day_table.select('tr[class^="slot load"]:not([class="slot load-empty"])')
+            date_text: str = day_table.find('h5').get_text()
+            date: str = date_text.split(', ')[1]
+            cur_day: Day = Day(
+                date=date,
+                name=string.capwords(day)
+            ) # date
+            slots: list[Tag] = day_table.select(
+                'tr[class^="slot load"]:not([class="slot load-empty"])'
+            )
             if slots:
-                cur_day.lessons = []
+                lessons_list: list[Lesson] = []
+                cur_day.lessons = lessons_list
                 for slot in slots:
                     
                     # info about lesson num(). We need only num of pair -> use regular expression
-                    pcap_span = slot.find('span', class_='pcap')
+                    pcap_span: Optional[Tag] = slot.find('span', class_='pcap')
                     if not pcap_span:
                         continue
-                    pcap_text = pcap_span.get_text(strip=True)
-                    time_match = re.search(r'\d+', pcap_text)
+                    pcap_text: str = pcap_span.get_text(strip=True)
+                    time_match: Optional[re.Match[str]] = re.search(
+                        pattern = r'\d+',
+                        string = pcap_text
+                    )
                     if not time_match:
                         continue
-                    time_info = int(time_match.group(0))
+                    time_info: int = int(time_match.group(0))
                     
-                    cur_less = Lesson(num=time_info)
-                    cur_less.time = time_dict[time_info]
+                    cur_less: Lesson = Lesson(num=time_info)
+                    cur_less.time = TIME_DICT[time_info]
 
-                    lesson_link = slot.find('a', class_='task')
+                    lesson_link: Optional[Tag] = slot.find('a', class_='task')
                     if lesson_link:
-                        title = lesson_link.contents[0].strip() # name of lesson
+                        title: str = lesson_link.contents[0].strip() # name of lesson
                         cur_less.name = title
 
                         cur_less.type = lesson_link.i.get_text(strip=True).replace('\n                 ', '') # type of lesson
 
-                        location_parts = list(lesson_link.stripped_strings)[2]
-                        match = re.search(r'(\d+)\s*корпус\s*-\s*([\d/*.]+|[\w/ №\d]+)', location_parts)
+                        location_parts: str = list(lesson_link.stripped_strings)[2]
+                        match: Optional[re.Match[str]] = re.search(
+                            pattern = r'(\d+)\s*корпус\s*-\s*([\d/*.]+|[\w/ №\d]+)',
+                            string = location_parts
+                        )
                         if match:
-                            location = f"{match.group(1)[0]}к {match.group(2)}"
+                            location: str = f"{match.group(1)[0]}к {match.group(2)}"
                         else:
                             location = "Неизвестно"
                         cur_less.place = location
                         
-                    cur_day.lessons.append(cur_less)
+                    lessons_list.append(cur_less)
 
-            day_dict = cur_day.model_dump()
+            day_dict: dict[str, Any] = cur_day.model_dump()
             
-            schedule_text += f"""----------------------------------------------
-Дата: {day_dict['date']}, {day_dict['name']}"""
+            schedule_text += (
+                f"----------------------------------------------\n"
+                f"Дата: {day_dict['date']}, {day_dict['name']}"
+            )
             if day_dict['lessons']:
                 for index, lesson in enumerate(day_dict['lessons']):
-                    schedule_text += f"""<blockquote><b>Номер пары: </b>{lesson['num']}
-<b>Дисциплина: </b>{lesson['name']}
-<b>Время: </b>{lesson['time']}
-<b>Тип: </b>{lesson['type']}
-<b>Аудитория: </b>{lesson['place']}</blockquote>"""
+                    lesson_data: dict[str, Any] = lesson
+                    schedule_text += (
+                        f"<blockquote>"
+                        f"<b>Номер пары: </b>{lesson_data['num']}\n"
+                        f"<b>Дисциплина </b>{lesson_data['name']}\n"
+                        f"<b>Время: </b>{lesson_data['time']}\n"
+                        f"<b>Тип: </b>{lesson_data['type']}\n"
+                        f"<b>Аудитория: </b>{lesson_data['place']}"
+                        f"</blockquote>"
+                    )
                     if index != len(day_dict['lessons']) - 1: schedule_text += '\n'
             else:
                 schedule_text += f"<blockquote>Занятий нет</blockquote>"

@@ -18,6 +18,7 @@ async def upd_week_num() -> None:
     if not group_num:
         logging.info("Base group not set. Skipping week number update.")
         return
+    
     link = f"http://rasp.rea.ru/Schedule/ScheduleCard?selection={group_num}"
     try:
         async with aiohttp.ClientSession() as session:
@@ -25,7 +26,7 @@ async def upd_week_num() -> None:
                 response.raise_for_status()
                 data = await response.text()
                 soup = BeautifulSoup(data, 'html.parser')
-                if soup.find('div'): 
+                if soup.find('div'):
                     week_input: BeautifulSoup = soup.find('input', id='weekNum')
                     if week_input and week_input.get('value'):
                         cur_week = int(week_input.get('value'))
@@ -35,7 +36,9 @@ async def upd_week_num() -> None:
                         logging.warning("Week number input not found in the response.")
 
     except aiohttp.ClientError as e:
-        print(f"Ошибка при получении данных: {e}")
+        logging.error(f"HTTP error during week number update: {e}")
+    except Exception as e:
+        logging.error(f"Unexpected error during week number update: {e}")
 
 
 scheduler = AsyncIOScheduler()
@@ -49,5 +52,5 @@ scheduler.add_job(
         timezone=moscow_tz
     ),
     id="week_num_updater",
-    name="Обновление номера недели"
+    name="Week Number Updater",
 )
